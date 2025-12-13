@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { AppContext } from "../context/AppContext";
 import { assets } from "../assets/assets";
@@ -10,6 +10,7 @@ const Appointment = () => {
   const { docId } = useParams();
   const { doctors, currencySymbol, backendUrl, token, getDoctorsData } =
     useContext(AppContext);
+  
   const daysOfWeek = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
 
   const navigate = useNavigate();
