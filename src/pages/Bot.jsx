@@ -52,7 +52,7 @@ export default function VoiceImagePost() {
     }
 
     try {
-      const res = await fetch("http://localhost:4000", {
+      const res = await fetch("https://prescripto-backend-3lvz.onrender.com", {
         method: "POST",
         body: formData,
       });
