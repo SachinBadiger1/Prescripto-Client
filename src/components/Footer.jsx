@@ -1,5 +1,7 @@
 import React from "react";
 import { assets } from "../assets/assets";
+import { NavLink, useNavigate } from "react-router-dom";
+
 
 const Footer = () => {
   return (
@@ -15,10 +17,16 @@ const Footer = () => {
         <div>
           <p className="text-xl font-medium mb-5">COMPANY</p>
           <ul className="flex flex-col gap-2 text-gray-600">
-            <li>Home</li>
+            <NavLink to="/">
+              <li>Home</li>
+            </NavLink>
+            <NavLink to="/about">
             <li>About us</li>
+            </NavLink>
+            <NavLink to="/contact">
             <li>Contact us</li>
-            <li>Privacy policy</li>
+            </NavLink>
+            
           </ul>
         </div>
 
@@ -26,19 +34,14 @@ const Footer = () => {
         <div>
           <p className="text-xl font-medium mb-5">GET IN TOUCH</p>
           <ul className="flex flex-col gap-2 text-gray-600">
-            <li>+250-784-652-570</li>
-            <li>elyseniyibizi502@gmail.com</li>
+            <li>0836-2747758</li>
+            <li>unityhealth@gmail.com</li>
           </ul>
         </div>
       </div>
 
-      {/* ------------ Copyright Text ------------ */}
-      <div>
-        <hr />
-        <p className="py-5 text-sm text-center">
-          Copyright © 2024 ElyséeDev - All Right Reserved
-        </p>
-      </div>
+      <hr />
+        
     </div>
   );
 };

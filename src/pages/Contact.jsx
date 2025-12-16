@@ -18,14 +18,16 @@ const Contact = () => {
         />
 
         <div className="flex flex-col justify-center items-start gap-6">
-          <p className="font-semibold text-lg text-gray-600">OUR OFFICE</p>
+          <p className="font-semibold text-lg text-gray-600">OUR LOCATION</p>
           <p className="text-gray-500">
-            54709 Willms Station <br /> Suite 350, Washington, USA
+            Besides Sarur TVS Showroom,<br/>
+            Maratha Colony Road,<br/>
+            Dharwad - 08.
           </p>
           <p className="text-gray-500">
-            Tel: (415) 555‑0132 <br /> Email: elyseniyibizi502@gmail.com
+            Tel: 0836-2747758 <br /> Email: unityhealth@gmail.com
           </p>
-          <p className="font-semibold text-lg text-gray-600">
+          {/* <p className="font-semibold text-lg text-gray-600">
             CAREERS AT PRESCRIPTO
           </p>
           <p className="text-gray-500">
@@ -33,7 +35,7 @@ const Contact = () => {
           </p>
           <button className="border border-black px-8 py-4 text-sm hover:bg-black hover:text-white transition-all duration-500">
             Explore Jobs
-          </button>
+          </button> */}
         </div>
       </div>
     </div>
