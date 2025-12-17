@@ -60,7 +60,7 @@ export default function VoiceImagePost() {
       const data = await res.json();
 
       setResponseText(data.text);
-      setResponseAudio(data.audio_url);
+      setResponseAudio(data.audio);
     } catch (err) {
       console.error(err);
       alert("Request failed");
