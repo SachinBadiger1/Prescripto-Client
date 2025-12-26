@@ -1,120 +1,133 @@
-import { useState, useRef } from "react";
 
-export default function VoiceImagePost() {
-  const [audioBlob, setAudioBlob] = useState(null);
-  const [imageFile, setImageFile] = useState(null);
-  const [responseText, setResponseText] = useState("");
-  const [responseAudio, setResponseAudio] = useState(null);
-  const [loading, setLoading] = useState(false);
+// ------------------------------------------------------------------------------
 
-  const mediaRecorderRef = useRef(null);
-  const audioChunksRef = useRef([]);
+//test botttttt
 
-  /* ------------------ AUDIO RECORDING ------------------ */
+// import { useState } from "react";
 
-  const startRecording = async () => {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+// export default function ProcessInput() {
+//   const [audio, setAudio] = useState(null);
+//   const [image, setImage] = useState(null);
+//   const [loading, setLoading] = useState(false);
+//   const [result, setResult] = useState(null);
+//   const [error, setError] = useState("");
 
-    mediaRecorderRef.current = new MediaRecorder(stream);
-    audioChunksRef.current = [];
+//   const handleSubmit = async (e) => {
+//     e.preventDefault();
 
-    mediaRecorderRef.current.ondataavailable = (e) => {
-      audioChunksRef.current.push(e.data);
-    };
+//     if (!audio) {
+//       setError("Audio file is required");
+//       return;
+//     }
 
-    mediaRecorderRef.current.onstop = () => {
-      const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
-      setAudioBlob(blob);
-    };
+//     setError("");
+//     setLoading(true);
+//     setResult(null);
 
-    mediaRecorderRef.current.start();
-  };
+//     const formData = new FormData();
+//     formData.append("audio", audio);
+//     if (image) formData.append("image", image);
 
-  const stopRecording = () => {
-    mediaRecorderRef.current.stop();
-  };
+//     try {
+//       const res = await fetch("http://192.168.14.47:5000/process", {
+//         method: "POST",
+//         body: formData,
+//       });
 
-  /* ------------------ SUBMIT ------------------ */
+//       const data = await res.json();
 
-  const handleSubmit = async () => {
-    if (!audioBlob) {
-      alert("Please record audio first");
-      return;
-    }
+//       if (!res.ok) {
+//         throw new Error(data.error || "Something went wrong");
+//       }
 
-    setLoading(true);
+//       setResult(data);
+//     } catch (err) {
+//       setError(err.message);
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
 
-    const formData = new FormData();
-    formData.append("audio", audioBlob, "voice.webm");
+//   return (
+//     <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4">
+//       <div className="bg-white w-full max-w-md rounded-xl shadow-md p-6">
+//         <h2 className="text-2xl font-semibold text-gray-800 mb-4">
+//           Doctor Assistant
+//         </h2>
 
-    if (imageFile) {
-      formData.append("image", imageFile);
-    }
+//         <form onSubmit={handleSubmit} className="space-y-4">
+//           <div>
+//             <label className="block text-sm font-medium text-gray-600 mb-1">
+//               Audio (required)
+//             </label>
+//             <input
+//               type="file"
+//               accept="audio/*"
+//               onChange={(e) => setAudio(e.target.files[0])}
+//               className="block w-full text-sm
+//                          file:mr-4 file:py-2 file:px-4
+//                          file:rounded-md file:border-0
+//                          file:text-sm file:font-medium
+//                          file:bg-blue-50 file:text-blue-700
+//                          hover:file:bg-blue-100"
+//             />
+//           </div>
 
-    try {
-      const res = await fetch("http://localhost:4000", {
-        method: "POST",
-        body: formData,
-      });
+//           <div>
+//             <label className="block text-sm font-medium text-gray-600 mb-1">
+//               Image (optional)
+//             </label>
+//             <input
+//               type="file"
+//               accept="image/*"
+//               onChange={(e) => setImage(e.target.files[0])}
+//               className="block w-full text-sm
+//                          file:mr-4 file:py-2 file:px-4
+//                          file:rounded-md file:border-0
+//                          file:text-sm file:font-medium
+//                          file:bg-green-50 file:text-green-700
+//                          hover:file:bg-green-100"
+//             />
+//           </div>
 
-      const data = await res.json();
+//           <button
+//             type="submit"
+//             disabled={loading}
+//             className="w-full bg-blue-600 text-white py-2 rounded-md
+//                        hover:bg-blue-700 transition disabled:opacity-60"
+//           >
+//             {loading ? "Processing..." : "Submit"}
+//           </button>
+//         </form>
 
-      setResponseText(data.text);
-      setResponseAudio(data.audio_url);
-    } catch (err) {
-      console.error(err);
-      alert("Request failed");
-    } finally {
-      setLoading(false);
-    }
-  };
+//         {error && (
+//           <p className="mt-4 text-sm text-red-600 bg-red-50 p-2 rounded">
+//             {error}
+//           </p>
+//         )}
 
-  /* ------------------ UI ------------------ */
+//         {result && (
+//           <div className="mt-6 space-y-3">
+//             <div>
+//               <h4 className="text-sm font-semibold text-gray-700">
+//                 Speech to Text
+//               </h4>
+//               <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded">
+//                 {result.speech_to_text}
+//               </p>
+//             </div>
 
-  return (
-    <div style={{ maxWidth: 500, margin: "auto" }}>
-      <h2>Voice + Image Upload</h2>
-
-      {/* Image (Optional) */}
-      <input
-        type="file"
-        accept="image/*"
-        onChange={(e) => setImageFile(e.target.files[0])}
-      />
-
-      {/* Audio Controls */}
-      <div style={{ marginTop: 10 }}>
-        <button onClick={startRecording}>🎙 Start</button>
-        <button onClick={stopRecording}>⏹ Stop</button>
-      </div>
-
-      {audioBlob && (
-        <audio controls src={URL.createObjectURL(audioBlob)} />
-      )}
-
-      {/* Submit */}
-      <button
-        onClick={handleSubmit}
-        disabled={loading}
-        style={{ marginTop: 10 }}
-      >
-        {loading ? "Processing..." : "Send"}
-      </button>
-
-      {/* Response */}
-      {responseText && (
-        <div style={{ marginTop: 20 }}>
-          <h3>Response Text</h3>
-          <p>{responseText}</p>
-        </div>
-      )}
-
-      {responseAudio && (
-        <div>
-          <h3>Response Voice</h3>
-          <audio controls src={responseAudio} />
-        </div>
-      )}
-    </div>
-  );
-}
+//             <div>
+//               <h4 className="text-sm font-semibold text-gray-700">
+//                 Doctor Response
+//               </h4>
+//               <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded">
+//                 {result.doctor_response}
+//               </p>
+//             </div>
+//           </div>
+//         )}
+//       </div>
+//     </div>
+//   );
+// }
