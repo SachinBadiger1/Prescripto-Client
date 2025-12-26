@@ -1,133 +1,168 @@
+import { useRef, useState, useEffect, useContext } from "react";
+import { AppContext } from "../context/AppContext";
+import { useNavigate } from "react-router-dom";
 
-// ------------------------------------------------------------------------------
+export default function Bot() {
+  const [recording, setRecording] = useState(false);
+  const [audioBlob, setAudioBlob] = useState(null);
+  const [audioURL, setAudioURL] = useState(null);
+  const [responseText, setResponseText] = useState("");
+  const [speciality, setSpeciality] = useState(null);
+  const [filteredDoctors, setFilteredDoctors] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-//test botttttt
+  const { doctors } = useContext(AppContext);
+  const navigate = useNavigate();
 
-// import { useState } from "react";
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
 
-// export default function ProcessInput() {
-//   const [audio, setAudio] = useState(null);
-//   const [image, setImage] = useState(null);
-//   const [loading, setLoading] = useState(false);
-//   const [result, setResult] = useState(null);
-//   const [error, setError] = useState("");
+  /* ------------------ RECORDING ------------------ */
 
-//   const handleSubmit = async (e) => {
-//     e.preventDefault();
+  const startRecording = async () => {
+    if (recording) return;
 
-//     if (!audio) {
-//       setError("Audio file is required");
-//       return;
-//     }
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mediaRecorderRef.current = new MediaRecorder(stream);
+    audioChunksRef.current = [];
+    setRecording(true);
 
-//     setError("");
-//     setLoading(true);
-//     setResult(null);
+    mediaRecorderRef.current.ondataavailable = (e) => {
+      if (e.data.size > 0) audioChunksRef.current.push(e.data);
+    };
 
-//     const formData = new FormData();
-//     formData.append("audio", audio);
-//     if (image) formData.append("image", image);
+    mediaRecorderRef.current.onstop = () => {
+      const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+      setAudioBlob(blob);
+      setAudioURL(URL.createObjectURL(blob));
+      setRecording(false);
+      stream.getTracks().forEach((t) => t.stop());
+    };
 
-//     try {
-//       const res = await fetch("http://192.168.14.47:5000/process", {
-//         method: "POST",
-//         body: formData,
-//       });
+    mediaRecorderRef.current.start();
+  };
 
-//       const data = await res.json();
+  const stopRecording = () => {
+    mediaRecorderRef.current?.stop();
+  };
 
-//       if (!res.ok) {
-//         throw new Error(data.error || "Something went wrong");
-//       }
+  /* ------------------ SPECIALITY EXTRACTION ------------------ */
 
-//       setResult(data);
-//     } catch (err) {
-//       setError(err.message);
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
+  const extractSpeciality = (text) => {
+    const words = text.trim().split(" ");
+    const last = words[words.length - 1];
+    return last.charAt(0).toUpperCase() + last.slice(1);
+  };
 
-//   return (
-//     <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4">
-//       <div className="bg-white w-full max-w-md rounded-xl shadow-md p-6">
-//         <h2 className="text-2xl font-semibold text-gray-800 mb-4">
-//           Doctor Assistant
-//         </h2>
+  /* ------------------ SEND ------------------ */
 
-//         <form onSubmit={handleSubmit} className="space-y-4">
-//           <div>
-//             <label className="block text-sm font-medium text-gray-600 mb-1">
-//               Audio (required)
-//             </label>
-//             <input
-//               type="file"
-//               accept="audio/*"
-//               onChange={(e) => setAudio(e.target.files[0])}
-//               className="block w-full text-sm
-//                          file:mr-4 file:py-2 file:px-4
-//                          file:rounded-md file:border-0
-//                          file:text-sm file:font-medium
-//                          file:bg-blue-50 file:text-blue-700
-//                          hover:file:bg-blue-100"
-//             />
-//           </div>
+  const sendRequest = async () => {
+    if (!audioBlob) return alert("Record audio first");
 
-//           <div>
-//             <label className="block text-sm font-medium text-gray-600 mb-1">
-//               Image (optional)
-//             </label>
-//             <input
-//               type="file"
-//               accept="image/*"
-//               onChange={(e) => setImage(e.target.files[0])}
-//               className="block w-full text-sm
-//                          file:mr-4 file:py-2 file:px-4
-//                          file:rounded-md file:border-0
-//                          file:text-sm file:font-medium
-//                          file:bg-green-50 file:text-green-700
-//                          hover:file:bg-green-100"
-//             />
-//           </div>
+    setLoading(true);
+    setResponseText("");
+    setSpeciality(null);
 
-//           <button
-//             type="submit"
-//             disabled={loading}
-//             className="w-full bg-blue-600 text-white py-2 rounded-md
-//                        hover:bg-blue-700 transition disabled:opacity-60"
-//           >
-//             {loading ? "Processing..." : "Submit"}
-//           </button>
-//         </form>
+    const formData = new FormData();
+    formData.append("audio", audioBlob, "voice.webm");
 
-//         {error && (
-//           <p className="mt-4 text-sm text-red-600 bg-red-50 p-2 rounded">
-//             {error}
-//           </p>
-//         )}
+    try {
+      const res = await fetch(
+        "https://prescripto-backend-3lvz.onrender.com/api/voice",
+        { method: "POST", body: formData }
+      );
 
-//         {result && (
-//           <div className="mt-6 space-y-3">
-//             <div>
-//               <h4 className="text-sm font-semibold text-gray-700">
-//                 Speech to Text
-//               </h4>
-//               <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded">
-//                 {result.speech_to_text}
-//               </p>
-//             </div>
+      const data = await res.json();
+      setResponseText(data.text);
 
-//             <div>
-//               <h4 className="text-sm font-semibold text-gray-700">
-//                 Doctor Response
-//               </h4>
-//               <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded">
-//                 {result.doctor_response}
-//               </p>
-//             </div>
-//           </div>
-//         )}
-//       </div>
-//     </div>
-//   );
-// }
+      const extracted = extractSpeciality(data.text);
+      setSpeciality(extracted);
+
+      // SAME logic as Doctors.jsx
+      setFilteredDoctors(
+        doctors.filter((doc) => doc.speciality === extracted)
+      );
+    } catch {
+      setError("Failed to get response");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /* ------------------ UI ------------------ */
+
+  return (
+    <section className="bg-[#f8f9ff] py-20">
+      <div className="max-w-6xl mx-auto">
+
+        {/* BOT CARD */}
+        <div className="max-w-xl mx-auto bg-white rounded-2xl shadow-xl p-8">
+          <h2 className="text-3xl font-bold text-[#5f6fff] text-center">
+            Prescripto Assistant
+          </h2>
+
+          <div className="flex justify-center gap-4 mt-8">
+            <button onClick={startRecording} disabled={recording}
+              className="px-6 py-3 rounded-full bg-green-500 text-white">
+              🎙 Start
+            </button>
+            <button onClick={stopRecording} disabled={!recording}
+              className="px-6 py-3 rounded-full bg-red-500 text-white">
+              ⏹ Stop
+            </button>
+          </div>
+
+          {audioURL && (
+            <div className="mt-4 flex justify-center">
+              <audio controls src={audioURL} />
+            </div>
+          )}
+
+          <div className="flex justify-center mt-6">
+            <button
+              onClick={sendRequest}
+              disabled={loading}
+              className="px-10 py-3 rounded-full bg-[#5f6fff] text-white"
+            >
+              {loading ? "Processing..." : "Send to Bot"}
+            </button>
+          </div>
+
+          {responseText && (
+            <div className="mt-6 bg-[#f1f3ff] p-5 rounded-xl">
+              <p className="text-gray-700">{responseText}</p>
+            </div>
+          )}
+        </div>
+
+        {/* ------------------ EXPERT DOCTORS ------------------ */}
+        {speciality && (
+          <div className="mt-16">
+            <h3 className="text-2xl font-semibold text-center text-[#262626]">
+              Expert {speciality}s Available
+            </h3>
+
+            <div className="grid grid-cols-auto gap-6 mt-8">
+              {filteredDoctors.map((doc) => (
+                <div
+                  key={doc._id}
+                  onClick={() => navigate(`/appointment/${doc._id}`)}
+                  className="border border-[#C9D8FF] rounded-xl overflow-hidden cursor-pointer
+                             hover:translate-y-[-8px] transition-all"
+                >
+                  <img src={doc.image} className="bg-[#EAEFFF]" />
+                  <div className="p-4">
+                    <p className="text-lg font-medium">{doc.name}</p>
+                    <p className="text-sm text-gray-500">{doc.speciality}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+      </div>
+    </section>
+  );
+}
