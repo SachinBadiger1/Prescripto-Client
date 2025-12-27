@@ -1,168 +1,196 @@
-import { useRef, useState, useEffect, useContext } from "react";
+import { useContext, useRef, useState, useEffect } from "react";
 import { AppContext } from "../context/AppContext";
 import { useNavigate } from "react-router-dom";
 
-export default function Bot() {
-  const [recording, setRecording] = useState(false);
-  const [audioBlob, setAudioBlob] = useState(null);
-  const [audioURL, setAudioURL] = useState(null);
-  const [responseText, setResponseText] = useState("");
-  const [speciality, setSpeciality] = useState(null);
-  const [filteredDoctors, setFilteredDoctors] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-
+export default function VoiceDoctorAssistant() {
   const { doctors } = useContext(AppContext);
   const navigate = useNavigate();
+
+  const [recording, setRecording] = useState(false);
+  const [audioBlob, setAudioBlob] = useState(null);
+  const [image, setImage] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const [result, setResult] = useState(null);
+  const [speciality, setSpeciality] = useState("");
+  const [filteredDoctors, setFilteredDoctors] = useState([]);
+  const [error, setError] = useState("");
 
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
 
-  /* ------------------ RECORDING ------------------ */
+  /* ---------------- AUDIO RECORDING ---------------- */
 
   const startRecording = async () => {
-    if (recording) return;
-
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
     mediaRecorderRef.current = new MediaRecorder(stream);
     audioChunksRef.current = [];
-    setRecording(true);
 
     mediaRecorderRef.current.ondataavailable = (e) => {
-      if (e.data.size > 0) audioChunksRef.current.push(e.data);
+      audioChunksRef.current.push(e.data);
     };
 
     mediaRecorderRef.current.onstop = () => {
       const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
       setAudioBlob(blob);
-      setAudioURL(URL.createObjectURL(blob));
-      setRecording(false);
-      stream.getTracks().forEach((t) => t.stop());
     };
 
     mediaRecorderRef.current.start();
+    setRecording(true);
   };
 
   const stopRecording = () => {
-    mediaRecorderRef.current?.stop();
+    mediaRecorderRef.current.stop();
+    setRecording(false);
   };
 
-  /* ------------------ SPECIALITY EXTRACTION ------------------ */
+  /* ---------------- API CALL ---------------- */
 
-  const extractSpeciality = (text) => {
-    const words = text.trim().split(" ");
-    const last = words[words.length - 1];
-    return last.charAt(0).toUpperCase() + last.slice(1);
-  };
-
-  /* ------------------ SEND ------------------ */
-
-  const sendRequest = async () => {
-    if (!audioBlob) return alert("Record audio first");
+  const handleSubmit = async () => {
+    if (!audioBlob) {
+      setError("Please record audio first");
+      return;
+    }
 
     setLoading(true);
-    setResponseText("");
-    setSpeciality(null);
+    setError("");
+    setResult(null);
+    setFilteredDoctors([]);
 
     const formData = new FormData();
     formData.append("audio", audioBlob, "voice.webm");
+    if (image) formData.append("image", image);
 
     try {
-      const res = await fetch(
-        "https://prescripto-backend-3lvz.onrender.com/api/voice",
-        { method: "POST", body: formData }
-      );
+      const res = await fetch("http://192.168.14.35:5000/process", {
+        method: "POST",
+        body: formData,
+      });
 
       const data = await res.json();
-      setResponseText(data.text);
+      if (!res.ok) throw new Error(data.error || "Request failed");
 
-      const extracted = extractSpeciality(data.text);
-      setSpeciality(extracted);
+      setResult(data);
 
-      // SAME logic as Doctors.jsx
-      setFilteredDoctors(
-        doctors.filter((doc) => doc.speciality === extracted)
-      );
-    } catch {
-      setError("Failed to get response");
+      /* --------- EXTRACT SPECIALITY --------- */
+      const words = data.doctor_response.trim().split(/\s+/);
+ const raw = words[words.length - 1];
+
+// remove trailing punctuation like . , ! ?
+const clean = raw.replace(/[.,!?]$/, "");
+
+const extractedSpeciality =
+  clean.charAt(0).toUpperCase() + clean.slice(1);
+
+
+      setSpeciality(extractedSpeciality);
+
+    } catch (err) {
+      setError(err.message);
     } finally {
       setLoading(false);
     }
   };
 
-  /* ------------------ UI ------------------ */
+  /* ---------------- FILTER DOCTORS (SAME LOGIC AS Doctors.jsx) ---------------- */
+
+  useEffect(() => {
+    if (speciality) {
+      setFilteredDoctors(
+        doctors.filter((doc) => doc.speciality === speciality)
+      );
+    }
+  }, [speciality, doctors]);
+
+  /* ---------------- UI ---------------- */
 
   return (
-    <section className="bg-[#f8f9ff] py-20">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-gray-100 px-4 py-6">
+      <div className="max-w-5xl mx-auto space-y-6">
 
-        {/* BOT CARD */}
-        <div className="max-w-xl mx-auto bg-white rounded-2xl shadow-xl p-8">
-          <h2 className="text-3xl font-bold text-[#5f6fff] text-center">
-            Prescripto Assistant
-          </h2>
+        {/* -------- INPUT CARD -------- */}
+        <div className="bg-white rounded-xl shadow p-6 space-y-4">
+          <h2 className="text-2xl font-semibold">Voice Doctor Assistant</h2>
 
-          <div className="flex justify-center gap-4 mt-8">
-            <button onClick={startRecording} disabled={recording}
-              className="px-6 py-3 rounded-full bg-green-500 text-white">
-              🎙 Start
-            </button>
-            <button onClick={stopRecording} disabled={!recording}
-              className="px-6 py-3 rounded-full bg-red-500 text-white">
-              ⏹ Stop
-            </button>
-          </div>
+          <button
+            onClick={recording ? stopRecording : startRecording}
+            className={`px-4 py-2 rounded text-white
+              ${recording ? "bg-red-600" : "bg-green-600"}`}
+          >
+            {recording ? "Stop Recording" : "Start Recording"}
+          </button>
 
-          {audioURL && (
-            <div className="mt-4 flex justify-center">
-              <audio controls src={audioURL} />
-            </div>
+          {audioBlob && (
+            <audio controls className="w-full">
+              <source src={URL.createObjectURL(audioBlob)} />
+            </audio>
           )}
 
-          <div className="flex justify-center mt-6">
-            <button
-              onClick={sendRequest}
-              disabled={loading}
-              className="px-10 py-3 rounded-full bg-[#5f6fff] text-white"
-            >
-              {loading ? "Processing..." : "Send to Bot"}
-            </button>
-          </div>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => setImage(e.target.files[0])}
+          />
 
-          {responseText && (
-            <div className="mt-6 bg-[#f1f3ff] p-5 rounded-xl">
-              <p className="text-gray-700">{responseText}</p>
-            </div>
-          )}
+          <button
+            onClick={handleSubmit}
+            disabled={loading}
+            className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-60"
+          >
+            {loading ? "Processing..." : "Submit"}
+          </button>
+
+          {error && <p className="text-red-600">{error}</p>}
         </div>
 
-        {/* ------------------ EXPERT DOCTORS ------------------ */}
-        {speciality && (
-          <div className="mt-16">
-            <h3 className="text-2xl font-semibold text-center text-[#262626]">
-              Expert {speciality}s Available
-            </h3>
+        {/* -------- RESPONSE -------- */}
+        {result && (
+          <div className="bg-white rounded-xl shadow p-6 space-y-2">
+            <p><b>Speech:</b> {result.speech_to_text}</p>
+            <p><b>Doctor Response:</b> {result.doctor_response}</p>
+            <p className="text-blue-600 font-medium">
+              Showing doctors for: {speciality}
+            </p>
+          </div>
+        )}
 
-            <div className="grid grid-cols-auto gap-6 mt-8">
-              {filteredDoctors.map((doc) => (
-                <div
-                  key={doc._id}
-                  onClick={() => navigate(`/appointment/${doc._id}`)}
-                  className="border border-[#C9D8FF] rounded-xl overflow-hidden cursor-pointer
-                             hover:translate-y-[-8px] transition-all"
-                >
-                  <img src={doc.image} className="bg-[#EAEFFF]" />
-                  <div className="p-4">
-                    <p className="text-lg font-medium">{doc.name}</p>
-                    <p className="text-sm text-gray-500">{doc.speciality}</p>
+        {/* -------- DOCTORS LIST (SAME UI STYLE) -------- */}
+        {filteredDoctors.length > 0 && (
+          <div className="grid grid-cols-auto gap-4 gap-y-6">
+            {filteredDoctors.map((item, index) => (
+              <div
+                key={index}
+                onClick={() => {
+                  navigate(`/appointment/${item._id}`);
+                  scrollTo(0, 0);
+                }}
+                className="border border-[#C9D8FF] rounded-xl overflow-hidden cursor-pointer hover:-translate-y-2 transition-all"
+              >
+                <img className="bg-[#EAEFFF]" src={item.image} alt="" />
+                <div className="p-4">
+                  <div
+                    className={`flex items-center gap-2 text-sm ${
+                      item.available ? "text-green-500" : "text-gray-500"
+                    }`}
+                  >
+                    <span
+                      className={`w-2 h-2 rounded-full ${
+                        item.available ? "bg-green-500" : "bg-gray-500"
+                      }`}
+                    ></span>
+                    {item.available ? "Available" : "Not Available"}
                   </div>
+                  <p className="text-lg font-medium">{item.name}</p>
+                  <p className="text-sm text-gray-600">{item.speciality}</p>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
           </div>
         )}
 
       </div>
-    </section>
+    </div>
   );
 }
+
