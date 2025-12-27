@@ -63,7 +63,7 @@ export default function VoiceDoctorAssistant() {
     if (image) formData.append("image", image);
 
     try {
-      const res = await fetch("http://192.168.14.35:5000/process", {
+      const res = await fetch("https://assistant-zwec.onrender.com//process", {
         method: "POST",
         body: formData,
       });
