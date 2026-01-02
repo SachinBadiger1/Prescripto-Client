@@ -64,7 +64,7 @@ export default function VoiceDoctorAssistant() {
 
     try {
       // const res = await fetch("https://assistant-zwec.onrender.com//process", {
-      const res = await fetch("http://10.190.181.130:5000", {
+      const res = await fetch("http://10.190.181.130:5000/process", {
 
         method: "POST",
         body: formData,
