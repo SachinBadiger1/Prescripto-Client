@@ -182,6 +182,9 @@ const Doctors = () => {
           <p onClick={() => speciality === 'Neurologist' ? navigate('/doctors') : navigate('/doctors/Neurologist')} className={`w-[94vw] sm:w-auto pl-3 py-1.5 pr-16 border border-gray-300 rounded transition-all cursor-pointer ${speciality === 'Neurologist' ? 'bg-[#E2E5FF] text-black ' : ''}`}>Neurologist</p>
           <p onClick={() => speciality === 'Cardiologist' ? navigate('/doctors') : navigate('/doctors/Cardiologist')} className={`w-[94vw] sm:w-auto pl-3 py-1.5 pr-16 border border-gray-300 rounded transition-all cursor-pointer ${speciality === 'Cardiologist' ? 'bg-[#E2E5FF] text-black ' : ''}`}>Cardiologist</p>
           <p onClick={() => speciality === 'Gastroenterologist' ? navigate('/doctors') : navigate('/doctors/Gastroenterologist')} className={`w-[94vw] sm:w-auto pl-3 py-1.5 pr-16 border border-gray-300 rounded transition-all cursor-pointer ${speciality === 'Gastroenterologist' ? 'bg-[#E2E5FF] text-black ' : ''}`}>Gastroenterologist</p>
+          <p onClick={() => speciality === 'Otolaryngologist' ? navigate('/doctors') : navigate('/doctors/Otolaryngologist')} className={`w-[94vw] sm:w-auto pl-3 py-1.5 pr-16 border border-gray-300 rounded transition-all cursor-pointer ${speciality === 'Otolaryngologist' ? 'bg-[#E2E5FF] text-black ' : ''}`}>Otolaryngologist</p>
+          <p onClick={() => speciality === 'Orthopedist' ? navigate('/doctors') : navigate('/doctors/Orthopedist')} className={`w-[94vw] sm:w-auto pl-3 py-1.5 pr-16 border border-gray-300 rounded transition-all cursor-pointer ${speciality === 'Orthopedist' ? 'bg-[#E2E5FF] text-black ' : ''}`}>Orthopedist</p>
+
         </div>
         <div className='w-full grid grid-cols-auto gap-4 gap-y-6'>
           {filterDoc.map((item, index) => (
