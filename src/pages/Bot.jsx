@@ -83,8 +83,10 @@ const clean = raw.replace(/[.,!?]$/, "");
 const extractedSpeciality =
   clean.charAt(0).toUpperCase() + clean.slice(1);
 
-
-      setSpeciality(extractedSpeciality);
+      if (extractedSpeciality === "Physician")
+        setSpeciality("General physician")
+      else
+        setSpeciality(extractedSpeciality);
 
     } catch (err) {
       setError(err.message);
@@ -105,58 +107,99 @@ const extractedSpeciality =
 
   /* ---------------- UI ---------------- */
 
-  return (
-    <div className="min-h-screen bg-gray-100 px-4 py-6">
-      <div className="max-w-5xl mx-auto space-y-6">
+return (
+  <div className="min-h-screen bg-[#F6F8FF] px-4 py-8">
+    <div className="max-w-6xl mx-auto space-y-8">
 
-        {/* -------- INPUT CARD -------- */}
-        <div className="bg-white rounded-xl shadow p-6 space-y-4">
-          <h2 className="text-2xl font-semibold">Voice Doctor Assistant</h2>
+      {/* ===== Header ===== */}
+      <div className="bg-gradient-to-r from-[#5F6FFF] to-[#7B8CFF] rounded-2xl p-8 text-white shadow">
+        <h1 className="text-3xl font-semibold">Voice Doctor Assistant</h1>
+        <p className="mt-2 text-sm opacity-90">
+          Describe your symptoms using voice and get matched with the right specialist.
+        </p>
+      </div>
 
+      {/* ===== Input Card ===== */}
+      <div className="bg-white rounded-2xl shadow p-6 space-y-5">
+        <h2 className="text-xl font-semibold text-gray-800">
+          Record your symptoms
+        </h2>
+
+        <div className="flex flex-wrap gap-4 items-center">
           <button
             onClick={recording ? stopRecording : startRecording}
-            className={`px-4 py-2 rounded text-white
-              ${recording ? "bg-red-600" : "bg-green-600"}`}
+            className={`px-6 py-2 rounded-full text-white font-medium transition
+              ${
+                recording
+                  ? "bg-red-600 hover:bg-red-700"
+                  : "bg-green-600 hover:bg-green-700"
+              }`}
           >
             {recording ? "Stop Recording" : "Start Recording"}
           </button>
 
-          {audioBlob && (
-            <audio controls className="w-full">
-              <source src={URL.createObjectURL(audioBlob)} />
-            </audio>
-          )}
+          <span className="text-sm text-gray-500">
+            {recording ? "Listening..." : "Tap to start recording"}
+          </span>
+        </div>
 
+        {/* ===== Latest Audio Preview ONLY ===== */}
+        {audioBlob && (
+          <audio
+            controls
+            className="w-full mt-2"
+            src={URL.createObjectURL(audioBlob)}
+          />
+        )}
+
+        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
           <input
             type="file"
             accept="image/*"
             onChange={(e) => setImage(e.target.files[0])}
+            className="text-sm"
           />
 
           <button
             onClick={handleSubmit}
             disabled={loading}
-            className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-60"
+            className="bg-[#5F6FFF] text-white px-6 py-2 rounded-full font-medium hover:bg-[#4B5BFF] disabled:opacity-60"
           >
-            {loading ? "Processing..." : "Submit"}
+            {loading ? "Analyzing..." : "Submit"}
           </button>
-
-          {error && <p className="text-red-600">{error}</p>}
         </div>
 
-        {/* -------- RESPONSE -------- */}
-        {result && (
-          <div className="bg-white rounded-xl shadow p-6 space-y-2">
-            <p><b>Speech:</b> {result.speech_to_text}</p>
-            <p><b>Doctor Response:</b> {result.doctor_response}</p>
-            <p className="text-blue-600 font-medium">
-              Showing doctors for: {speciality}
-            </p>
-          </div>
+        {error && (
+          <p className="text-red-600 text-sm">{error}</p>
         )}
+      </div>
 
-        {/* -------- DOCTORS LIST (SAME UI STYLE) -------- */}
-        {filteredDoctors.length > 0 && (
+      {/* ===== Result Section ===== */}
+      {result && (
+        <div className="bg-white rounded-2xl shadow p-6 space-y-3">
+          <p>
+            <span className="font-medium text-gray-700">You said:</span>{" "}
+            {result.speech_to_text}
+          </p>
+
+          <p>
+            <span className="font-medium text-gray-700">Assistant:</span>{" "}
+            {result.doctor_response}
+          </p>
+
+          <div className="inline-block mt-2 px-4 py-1 rounded-full bg-[#EAEFFF] text-[#5F6FFF] font-medium text-sm">
+            Speciality: {speciality}
+          </div>
+        </div>
+      )}
+
+      {/* ===== Doctors Grid ===== */}
+      {filteredDoctors.length > 0 && (
+        <div>
+          <h2 className="text-xl font-semibold mb-4 text-gray-800">
+            Available Specialists
+          </h2>
+
           <div className="grid grid-cols-auto gap-4 gap-y-6">
             {filteredDoctors.map((item, index) => (
               <div
@@ -165,9 +208,13 @@ const extractedSpeciality =
                   navigate(`/appointment/${item._id}`);
                   scrollTo(0, 0);
                 }}
-                className="border border-[#C9D8FF] rounded-xl overflow-hidden cursor-pointer hover:-translate-y-2 transition-all"
+                className="border border-[#C9D8FF] rounded-xl overflow-hidden cursor-pointer hover:-translate-y-2 transition-all bg-white"
               >
-                <img className="bg-[#EAEFFF]" src={item.image} alt="" />
+                <img
+                  className="bg-[#EAEFFF]"
+                  src={item.image}
+                  alt={item.name}
+                />
                 <div className="p-4">
                   <div
                     className={`flex items-center gap-2 text-sm ${
@@ -178,7 +225,7 @@ const extractedSpeciality =
                       className={`w-2 h-2 rounded-full ${
                         item.available ? "bg-green-500" : "bg-gray-500"
                       }`}
-                    ></span>
+                    />
                     {item.available ? "Available" : "Not Available"}
                   </div>
                   <p className="text-lg font-medium">{item.name}</p>
@@ -187,10 +234,25 @@ const extractedSpeciality =
               </div>
             ))}
           </div>
-        )}
+        </div>
+      )}
 
-      </div>
+      {/* ===== Empty State ===== */}
+      {speciality && filteredDoctors.length === 0 && !loading && (
+        <div className="bg-white rounded-2xl shadow p-10 text-center">
+          <p className="text-lg font-medium text-gray-700">
+            Sorry!
+          </p>
+          <p className="text-gray-500 mt-2">
+            We currently don’t have any experts available in this field.
+          </p>
+        </div>
+      )}
+
     </div>
-  );
+  </div>
+);
+
+
 }
 
